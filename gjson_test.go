@@ -340,14 +340,12 @@ func TestPlus53BitInts(t *testing.T) {
 	assert(t, Get(json, "overflow_int53").Int() == 2251799813685248)
 	assert(t, Get(json, "min_uint64").Uint() == 0)
 	assert(t, Get(json, "max_uint64").Uint() == 18446744073709551615)
-	// this next value overflows the max uint64 by one which will just
-	// flip the number to zero
-	assert(t, Get(json, "overflow_uint64").Int() == 0)
+	assert(t, Get(json, "overflow_uint64").Int() == math.MaxInt64)
+	assert(t, Get(json, "overflow_uint64").Uint() == math.MaxUint64)
 	assert(t, Get(json, "min_int64").Int() == -9223372036854775808)
 	assert(t, Get(json, "max_int64").Int() == 9223372036854775807)
-	// this next value overflows the max int64 by one which will just
-	// flip the number to the negative sign.
-	assert(t, Get(json, "overflow_int64").Int() == -9223372036854775808)
+	assert(t, Get(json, "overflow_int64").Uint() == 9223372036854775808)
+	assert(t, Get(json, "overflow_int64").Int() == math.MaxInt64)
 }
 func TestIssue38(t *testing.T) {
 	// These should not fail, even though the unicode is invalid.
@@ -2776,4 +2774,68 @@ func TestIter(t *testing.T) {
 		i++
 	}
 
+}
+
+func TestIntOverflow(t *testing.T) {
+	// https://github.com/tidwall/gjson/issues/394
+	var f float64
+
+	// Go ensures that float -> int overflows are clipped
+	f = 18446744073709551616.0
+	assert(t, uint64(f) == math.MaxUint64)
+	assert(t, int64(f) == math.MaxInt64)
+
+	f = -18446744073709551616.0
+	assert(t, uint64(f) == 0)
+	assert(t, int64(f) == math.MinInt64)
+
+	// Numbers
+	assert(t, Parse("18446744073709551613").Uint() == 18446744073709551613)
+	assert(t, Parse("18446744073709551614").Uint() == 18446744073709551614)
+	assert(t, Parse("18446744073709551615").Uint() == 18446744073709551615)
+	assert(t, Parse("18446744073709551616").Uint() == 18446744073709551615)
+	assert(t, Parse("18446744073709551616.0").Uint() == 18446744073709551615)
+	assert(t, Parse("18446744073709551616.1").Uint() == 18446744073709551615)
+	assert(t, Parse("18446744073709551617.1").Uint() == 18446744073709551615)
+	assert(t, Parse("9223372036854775805").Int() == 9223372036854775805)
+	assert(t, Parse("9223372036854775806").Int() == 9223372036854775806)
+	assert(t, Parse("9223372036854775807").Int() == 9223372036854775807)
+	assert(t, Parse("9223372036854775808").Int() == 9223372036854775807)
+	assert(t, Parse("9223372036854775809").Int() == 9223372036854775807)
+	assert(t, Parse("9223372036854775809.0").Int() == 9223372036854775807)
+	assert(t, Parse("9223372036854775809.1").Int() == 9223372036854775807)
+	assert(t, Parse("9223372036854775809.1").Int() == 9223372036854775807)
+	assert(t, Parse("-9223372036854775805").Int() == -9223372036854775805)
+	assert(t, Parse("-9223372036854775806").Int() == -9223372036854775806)
+	assert(t, Parse("-9223372036854775807").Int() == -9223372036854775807)
+	assert(t, Parse("-9223372036854775808").Int() == -9223372036854775808)
+	assert(t, Parse("-9223372036854775809").Int() == -9223372036854775808)
+	assert(t, Parse("-9223372036854775809.0").Int() == -9223372036854775808)
+	assert(t, Parse("-9223372036854775809.1").Int() == -9223372036854775808)
+	assert(t, Parse("-9223372036854775809.1").Int() == -9223372036854775808)
+
+	// Strings
+	assert(t, Parse(`"18446744073709551613"`).Uint() == 18446744073709551613)
+	assert(t, Parse(`"18446744073709551614"`).Uint() == 18446744073709551614)
+	assert(t, Parse(`"18446744073709551615"`).Uint() == 18446744073709551615)
+	assert(t, Parse(`"18446744073709551616"`).Uint() == 18446744073709551615)
+	assert(t, Parse(`"18446744073709551616.0"`).Uint() == 18446744073709551615)
+	assert(t, Parse(`"18446744073709551616.1"`).Uint() == 18446744073709551615)
+	assert(t, Parse(`"18446744073709551617.1"`).Uint() == 18446744073709551615)
+	assert(t, Parse(`"9223372036854775805"`).Int() == 9223372036854775805)
+	assert(t, Parse(`"9223372036854775806"`).Int() == 9223372036854775806)
+	assert(t, Parse(`"9223372036854775807"`).Int() == 9223372036854775807)
+	assert(t, Parse(`"9223372036854775808"`).Int() == 9223372036854775807)
+	assert(t, Parse(`"9223372036854775809"`).Int() == 9223372036854775807)
+	assert(t, Parse(`"9223372036854775809.0"`).Int() == 9223372036854775807)
+	assert(t, Parse(`"9223372036854775809.1"`).Int() == 9223372036854775807)
+	assert(t, Parse(`"9223372036854775809.1"`).Int() == 9223372036854775807)
+	assert(t, Parse(`"-9223372036854775805"`).Int() == -9223372036854775805)
+	assert(t, Parse(`"-9223372036854775806"`).Int() == -9223372036854775806)
+	assert(t, Parse(`"-9223372036854775807"`).Int() == -9223372036854775807)
+	assert(t, Parse(`"-9223372036854775808"`).Int() == -9223372036854775808)
+	assert(t, Parse(`"-9223372036854775809"`).Int() == -9223372036854775808)
+	assert(t, Parse(`"-9223372036854775809.0"`).Int() == -9223372036854775808)
+	assert(t, Parse(`"-9223372036854775809.1"`).Int() == -9223372036854775808)
+	assert(t, Parse(`"-9223372036854775809.1"`).Int() == -9223372036854775808)
 }

@@ -129,7 +129,13 @@ func (t Result) Int() int64 {
 	case True:
 		return 1
 	case String:
-		n, _ := parseInt(t.Str)
+		n, ok := parseInt(t.Str)
+		if !ok {
+			f, err := strconv.ParseFloat(t.Str, 64)
+			if err == nil {
+				n = int64(f)
+			}
+		}
 		return n
 	case Number:
 		// try to directly convert the float64 to int64
@@ -155,7 +161,13 @@ func (t Result) Uint() uint64 {
 	case True:
 		return 1
 	case String:
-		n, _ := parseUint(t.Str)
+		n, ok := parseUint(t.Str)
+		if !ok {
+			f, err := strconv.ParseFloat(t.Str, 64)
+			if err == nil {
+				n = uint64(f)
+			}
+		}
 		return n
 	case Number:
 		// try to directly convert the float64 to uint64
@@ -2764,42 +2776,53 @@ func ValidBytes(json []byte) bool {
 	return ok
 }
 
-func parseUint(s string) (n uint64, ok bool) {
+func parseUint(s string) (uint64, bool) {
 	var i int
 	if i == len(s) {
 		return 0, false
 	}
+	var n uint64
 	for ; i < len(s); i++ {
-		if s[i] >= '0' && s[i] <= '9' {
-			n = n*10 + uint64(s[i]-'0')
-		} else {
+		if s[i] < '0' || s[i] > '9' {
+			return 0, false
+		}
+		next := n*10 + uint64(s[i]-'0')
+		if next < n {
+			goto overflow
+		}
+		n = next
+	}
+	return n, true
+overflow:
+	// check that the remaining characters are valid
+	for ; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
 			return 0, false
 		}
 	}
-	return n, true
+	return 18446744073709551615, true
 }
 
-func parseInt(s string) (n int64, ok bool) {
-	var i int
+func parseInt(s string) (int64, bool) {
 	var sign bool
 	if len(s) > 0 && s[0] == '-' {
 		sign = true
-		i++
+		s = s[1:]
 	}
-	if i == len(s) {
+	n, ok := parseUint(s)
+	if !ok {
 		return 0, false
 	}
-	for ; i < len(s); i++ {
-		if s[i] >= '0' && s[i] <= '9' {
-			n = n*10 + int64(s[i]-'0')
-		} else {
-			return 0, false
-		}
-	}
 	if sign {
-		return n * -1, true
+		if n > 9223372036854775808 {
+			return -9223372036854775808, true
+		}
+		return -int64(n), true
 	}
-	return n, true
+	if n > 9223372036854775807 {
+		return 9223372036854775807, true
+	}
+	return int64(n), true
 }
 
 // safeInt validates a given JSON number
