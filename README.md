@@ -22,8 +22,6 @@ This README is a quick overview of how to use GJSON, for more information check 
 
 GJSON is also available for [Python](https://github.com/volans-/gjson-py) and [Rust](https://github.com/tidwall/gjson.rs)
 
-The official Git repository is at [Codeberg](https://codeberg.org/tidwall/gjson).
-
 Getting Started
 ===============
 
