@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -2557,13 +2558,30 @@ func goJSONMarshal(i interface{}) ([]byte, error) {
 	return bytes.TrimRight(buffer.Bytes(), "\n"), err
 }
 
+func isGo126() bool {
+	if v := runtime.Version(); strings.HasPrefix(v, "go") {
+		if p := strings.Split(v[2:], "."); len(p) >= 2 {
+			ma, e0 := strconv.Atoi(p[0])
+			mi, e1 := strconv.Atoi(p[1])
+			if e0 == nil && e1 == nil && ma <= 1 && mi <= 26 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func testJSONString(t *testing.T, str string) {
+	t.Helper()
 	gjsonString := string(AppendJSONString(nil, str))
 	data, err := goJSONMarshal(str)
 	if err != nil {
 		panic(123)
 	}
 	goString := string(data)
+	if isGo126() {
+		goString = strings.ReplaceAll(goString, "\\ufffd", "\xef\xbf\xbd")
+	}
 	if gjsonString != goString {
 		t.Fatal(strconv.Quote(str) + "\n\t" +
 			gjsonString + "\n\t" +
@@ -2584,6 +2602,7 @@ func TestJSONString(t *testing.T) {
 		t.Fatalf("expected '%v', got '%v'", s, value.String())
 	}
 	testJSONString(t, s)
+	testJSONString(t, "\xfd")
 	testJSONString(t, "R\xfd\xfc\a!\x82eO\x16?_\x0f\x9ab\x1dr")
 	testJSONString(t, "_\xb9\v\xad\xb3|X!\xb6\xd9U&\xa4\x1a\x95\x04")
 	data, _ := json.Marshal("\b\f")

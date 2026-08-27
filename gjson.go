@@ -2070,7 +2070,7 @@ func AppendJSONString(dst []byte, s string) []byte {
 				break
 			}
 			if r == utf8.RuneError && n == 1 {
-				dst = append(dst, `\ufffd`...)
+				dst = append(dst, "\xef\xbf\xbd"...)
 			} else if r == '\u2028' || r == '\u2029' {
 				dst = append(dst, `\u202`...)
 				dst = append(dst, hexchars[r&0xF])
