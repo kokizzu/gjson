@@ -2778,16 +2778,6 @@ func TestIter(t *testing.T) {
 
 func TestIntOverflow(t *testing.T) {
 	// https://github.com/tidwall/gjson/issues/394
-	var f float64
-
-	// Go ensures that float -> int overflows are clipped
-	f = 18446744073709551616.0
-	assert(t, uint64(f) == math.MaxUint64)
-	assert(t, int64(f) == math.MaxInt64)
-
-	f = -18446744073709551616.0
-	assert(t, uint64(f) == 0)
-	assert(t, int64(f) == math.MinInt64)
 
 	// Numbers
 	assert(t, Parse("18446744073709551613").Uint() == 18446744073709551613)

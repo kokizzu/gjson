@@ -9,6 +9,7 @@ package gjson
 
 import (
 	"iter"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -133,7 +134,7 @@ func (t Result) Int() int64 {
 		if !ok {
 			f, err := strconv.ParseFloat(t.Str, 64)
 			if err == nil {
-				n = int64(f)
+				n = f2i(f)
 			}
 		}
 		return n
@@ -149,7 +150,27 @@ func (t Result) Int() int64 {
 			return i
 		}
 		// fallback to a standard conversion
-		return int64(t.Num)
+		return f2i(t.Num)
+	}
+}
+
+func f2u(f float64) uint64 {
+	if f >= math.MaxUint64 {
+		return math.MaxUint64
+	} else if f < 0 {
+		return 0
+	} else {
+		return uint64(f)
+	}
+}
+
+func f2i(f float64) int64 {
+	if f >= math.MaxInt64 {
+		return math.MaxInt64
+	} else if f < math.MinInt64 {
+		return math.MinInt64
+	} else {
+		return int64(f)
 	}
 }
 
@@ -165,7 +186,7 @@ func (t Result) Uint() uint64 {
 		if !ok {
 			f, err := strconv.ParseFloat(t.Str, 64)
 			if err == nil {
-				n = uint64(f)
+				n = f2u(f)
 			}
 		}
 		return n
@@ -181,7 +202,7 @@ func (t Result) Uint() uint64 {
 			return u
 		}
 		// fallback to a standard conversion
-		return uint64(t.Num)
+		return f2u(t.Num)
 	}
 }
 
